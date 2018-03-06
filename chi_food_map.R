@@ -27,21 +27,16 @@ chi_tract_labels <- sprintf(
   chi_tracts$PRI_NEIGH, chi_tracts$counts, round(chi_tracts$STORES_PER, 2)
 ) %>% lapply(htmltools::HTML)
 
-chi_points_popup <- paste0(
-  chi_points$names, "<br>",
-  chi_points$address)
-
 # Generate a leaflet map using the helpers
 chi_map <- leaflet() %>%
   addProviderTiles("CartoDB.Positron") %>%
   
   # Point of each grocery store
   addCircles(
-    chi_points$longitude.,
-    chi_points$latitude.1,
-    popup=chi_points_popup,
-    weight = 4,
-    radius=4,
+    chi_points$longitude,
+    chi_points$latitude,
+    weight = 3,
+    radius = 4,
     color="maroon",
     stroke = TRUE,
     fillOpacity = 0.7,
