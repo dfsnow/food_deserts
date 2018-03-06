@@ -33,7 +33,7 @@ chi_points_popup <- paste0(
 
 # Generate a leaflet map using the helpers
 chi_map <- leaflet() %>%
-  addProviderTiles("CartoDB.Positron", group = "CartoDB") %>%
+  addProviderTiles("CartoDB.Positron") %>%
   
   # Point of each grocery store
   addCircles(
@@ -111,14 +111,11 @@ chi_map <- leaflet() %>%
   
   # Layer controls and cleanup
   addLayersControl(
-    baseGroups = c("CartoDB"),
-    overlayGroups = c("Total Stores",
-                      "Stores Per 1000 People",
-                      "Store Locations"),
+    baseGroups = c("Total Stores", "Stores Per 1000 People"),
+    overlayGroups = c("Store Locations"),
     position = "bottomright",
     options = layersControlOptions(collapsed = FALSE)) %>%
-  hideGroup("Store Locations") %>%
-  hideGroup("Stores Per 1000 People")
+  hideGroup("Store Locations") 
 
 # Save the leaflet map as an html file
 saveWidget(chi_map, file="chi_food_map.html", title = "Chicago Food Density Map")
