@@ -1,0 +1,246 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+rm(list=ls())
+```
+
+```{r include = FALSE}
+library(readr)
+library(ggmap)
+library(googleway)
+library(purrr)
+library(tidyverse)
+library(rlist)
+library(maptools)
+library(rgdal)
+library(tmap)
+library(stringr)
+library(sp)
+library(spdplyr)
+key <- ""
+
+```
+
+```{r}
+#define a function to query googlemaps for all establishments fitting a certain keyword within a 10000 meter radius of a certain coordinate, and package with details into a dataframe
+call_markets <- function(x, lat, long) {
+                          temp <-  google_places(keyword = x,
+                             location = c(lat, long), 
+                             radius = 10000,
+                             radar = TRUE,
+                             key = key)
+                          temp <-  as.list(temp$results$place_id)
+                          temp <- lapply(temp, function(x) {google_place_details(x, key = key)})
+  
+  names <- list()
+  for (i in 1:length(temp)) {
+  names <- list(names, temp[[i]][[2]][["name"]])
+ names <-  unlist(names)
+  }    
+
+  address <- list()
+  for (i in 1:length(temp)) {
+  address <- list(address, temp[[i]][[2]][["formatted_address"]])
+ address <-  unlist(address)
+  }
+ 
+  latitude <- list()
+  for (i in 1:length(temp)) {
+  latitude <- list(latitude, temp[[i]][[2]][["geometry"]][["location"]][["lat"]])
+ latitude <-  unlist(latitude)
+  } 
+  
+  longitude <- list()
+  for (i in 1:length(temp)) {
+  longitude <- list(longitude, temp[[i]][[2]][["geometry"]][["location"]][["lng"]])
+ longitude <-  unlist(longitude)
+  } 
+  
+  place_id <- list()
+for (i in 1:length(temp)) {
+  place_id <- list(place_id, temp[[i]][[2]][["place_id"]])
+  place_id <- unlist(place_id)
+}
+  
+data.frame(names, address, latitude, longitude, place_id)
+  
+}
+
+#define a similar function as the one above, but fitting a place type rather than name
+call_type <- function(x, lat, long) {
+                          temp <-  google_places(place_type = x,
+                             location = c(lat, long), 
+                             radius = 10000,
+                             radar = TRUE,
+                             key = key)
+                          temp <-  as.list(temp$results$place_id)
+                          temp <- lapply(temp, function(x) {google_place_details(x, key = key)})
+
+  names <- list()
+  for (i in 1:length(temp)) {
+  names <- list(names, temp[[i]][[2]][["name"]])
+ names <-  unlist(names)
+  }    
+
+  address <- list()
+  for (i in 1:length(temp)) {
+  address <- list(address, temp[[i]][[2]][["formatted_address"]])
+ address <-  unlist(address)
+  }
+ 
+  latitude <- list()
+  for (i in 1:length(temp)) {
+  latitude <- list(latitude, temp[[i]][[2]][["geometry"]][["location"]][["lat"]])
+ latitude <-  unlist(latitude)
+  } 
+  
+  longitude <- list()
+  for (i in 1:length(temp)) {
+  longitude <- list(longitude, temp[[i]][[2]][["geometry"]][["location"]][["lng"]])
+ longitude <-  unlist(longitude)
+  } 
+  
+  place_id <- list()
+for (i in 1:length(temp)) {
+  place_id <- list(place_id, temp[[i]][[2]][["place_id"]])
+  place_id <- unlist(place_id)
+}
+  
+data.frame(names, address, latitude, longitude, place_id)
+  
+  }
+```
+
+```{r}
+grocery <- call_markets('grocery', 41.739195, -87.616059)
+grocery <- bind_rows(grocery, call_markets('grocery', 41.816004, -87.664124))
+grocery <- bind_rows(grocery, call_markets('grocery', 41.882496, -87.681977))
+grocery <- bind_rows(grocery,  call_markets('grocery', 41.951984, -87.719056))
+write.csv(grocery, file = "grocery.csv")
+```
+
+```{r}
+market <- call_markets('market', 41.739195, -87.616059)
+market <- bind_rows(market, call_markets('market', 41.816004, -87.664124))
+market <- bind_rows(market, call_markets('market', 41.882496, -87.681977))
+market <- bind_rows(market,  call_markets('market', 41.951984, -87.719056))
+write.csv(market, file = "market.csv")
+```
+
+```{r}
+supermarket <- call_type('supermarket', 41.739195, -87.616059)
+supermarket <- bind_rows(supermarket, call_type('supermarket', 41.816004, -87.664124))
+supermarket <- bind_rows(supermarket, call_type('supermarket', 41.882496, -87.681977))
+supermarket <- bind_rows(supermarket,  call_type('supermarket', 41.951984, -87.719056))
+write.csv(supermarket, file = "supermarket.csv")
+```
+
+```{r}
+Walgreens <- call_markets('Walgreens', 41.739195, -87.616059)
+Walgreens <- bind_rows(Walgreens, call_markets('Walgreens', 41.816004, -87.664124))
+Walgreens <- bind_rows(Walgreens, call_markets('Walgreens', 41.882496, -87.681977))
+Walgreens <- bind_rows(Walgreens,  call_markets('Walgreens', 41.951984, -87.719056))
+```
+
+
+```{r}
+CVS <- call_markets('CVS', 41.739195, -87.616059)
+CVS <- bind_rows(CVS, call_markets('CVS', 41.816004, -87.664124))
+CVS <- bind_rows(CVS, call_markets('CVS', 41.882496, -87.681977))
+CVS <- bind_rows(CVS,  call_markets('CVS', 41.951984, -87.719056))
+```
+
+```{r}
+pharmacies <- bind_rows(Walgreens, CVS)
+duplicate_coords <- duplicated(pharmacies[, 3:4])
+pharmacies <- pharmacies[!duplicate_coords, ]
+chicago_addresses <- str_detect(pharmacies1$address,"Chicago")
+pharmacies <- pharmacies[chicago_addresses,]
+duplicate_address <- duplicated(pharmacies2[,2])
+pharmacies <- pharmacies[!duplicate_address,]
+write.csv(pharmacies, file = "pharmacies.csv")
+```
+
+
+
+```{r}
+all_markets <- bind_rows(grocery, market, supermarket, Walgreens, CVS)
+duplicate_coords <- duplicated(all_markets[, 3:4])
+all_markets <- all_markets[!duplicate_coords, ]
+chicago_addresses <- str_detect(all_markets$address,"Chicago")
+all_markets <- all_markets[chicago_addresses,]
+duplicate_address <- duplicated(all_markets_v3[,2])
+all_markets <- all_markets[!duplicate_address,]
+```
+
+```{r}
+osm_markets <- readOGR("Groceries", "OSM_groceries")
+osm_markets.df <- as.data.frame(osm_markets)
+osm_markets.df <- filter(osm_markets.df, shop != "convenience")
+osm_markets.df$address <- paste(osm_markets.df$addr_house, osm_markets.df$addr_stree)
+osm_markets.df1 <- subset(osm_markets.df, select = c("name", "address", "coords.x1", "coords.x2", "full_id"))
+som_markets.df1 <- filter(osm_markets.df1, name != "7-Eleven")
+colnames(som_markets.df1) <- c("names", "address", "longitude", "latitude", "place_id")
+all_markets_v5 <- bind_rows(all_markets_v4, som_markets.df1)
+duplicate_coords <- duplicated(all_markets_v5[, 3:4])
+all_markets_v5 <- all_markets_v5[!duplicate_coords, ]
+write.csv(all_markets_v5, file = "all_markets.csv")
+
+```
+
+```{r}
+all_markets_9 <- read_csv("~/Harris MPP/Data Projects/Chicago Food Deserts/Chicago Food Deserts/all_markets_9.csv")
+all_markets_10 <- filter(all_markets_9, latitude < 42.0196)
+all_markets_10 <- filter(all_markets_10, latitude > 41.645)
+all_markets_10 <- filter(all_markets_10, longitude > -87.861)
+write.csv(all_markets_10, file = "all_markets_11.csv")
+
+```
+
+```{r}
+all_markets <- all_markets[,2:6]
+coords <- all_markets[, c(4,3)]
+
+spdf_markets <- SpatialPointsDataFrame(coords = coords, data = all_markets)
+dist1 <- as.data.frame(spDistsN1(spdf_markets, spdf_markets[270,]))
+dist1$ID <- seq.int(nrow(dist1))
+names(dist1) <- c("dist", "ID")
+dist1<- arrange(dist1, dist)
+
+spdf_markets_v2 <- spdf_markets
+
+for (i in 1:length(spdf_markets_v2)){
+  
+  spdf_markets_v2@data$dist_i <- spDistsN1(spdf_markets_v2, spdf_markets_v2[i,])
+  
+  test <- filter(spdf_markets_v2,  spdf_markets_v2@data$dist_i > 0 & 
+                              spdf_markets_v2@data$dist_i < 0.009)
+
+  test <- filter(test, tolower(strsplit(spdf_markets_v2@data$names[i]," ")[[1]][1]) ==
+                              tolower(sapply(strsplit(test@data$names, " "), `[`,1)))
+
+spdf_markets_v2 <<- subset(spdf_markets_v2, !spdf_markets_v2@data$place_id %in% test@data$place_id)
+}
+
+for (i in 1:length(spdf_markets_v2)){
+  
+  spdf_markets_v2@data$dist_i <- spDistsN1(spdf_markets_v2, spdf_markets_v2[i,])
+  
+  test <- filter(spdf_markets_v2,  spdf_markets_v2@data$dist_i > 0 & 
+                              spdf_markets_v2@data$dist_i < 0.009)
+
+  test <- filter(test, tolower(strsplit(spdf_markets_v2@data$names[i],"-")[[1]][1]) ==
+                              tolower(sapply(strsplit(test@data$names, "-"), `[`,1)))
+
+spdf_markets_v2 <<- subset(spdf_markets_v2, !spdf_markets_v2@data$place_id %in% test@data$place_id)
+}
+
+all_markets_v6 <- as.data.frame(spdf_markets_v2)
+marketing <- str_detect(all_markets_v6$names, 'Marketing')
+all_markets_v7 <- all_markets_v6[!marketing, ]
+write.csv(all_markets_v7, file = "all_markets_7.csv")
+
+```
